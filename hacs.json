@@ -1,7 +1,5 @@
 {
-  "name": "Souliss HA Integration",
-  "zip_release": true,
-  "filename": "Souliss_HA_Integration.zip",
+  "name": "Souliss Home Assistant Integration",
   "homeassistant": "2026.4.0",
   "render_readme": true
 }
