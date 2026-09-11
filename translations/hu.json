@@ -1,0 +1,32 @@
+{
+  "title": "Souliss",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Kapcsolódás a Souliss Gatewayhez",
+        "description": "Add meg a Souliss Gateway adatait. A USER_INDEX és NODE_INDEX párosnak egyedinek kell lennie a SoulissApp, openHAB és minden más kezelőfelület mellett.",
+        "data": {
+          "host": "Gateway IP-címe",
+          "gateway_port": "Gateway UDP-port",
+          "local_port": "Home Assistant helyi UDP-port",
+          "user_index": "USER_INDEX",
+          "node_index": "NODE_INDEX"
+        },
+        "data_description": {
+          "host": "A Souliss Gateway LAN IPv4-címe vagy hostneve.",
+          "gateway_port": "A Souliss alapértelmezett UDP-portja 230.",
+          "local_port": "A Home Assistant integráció saját UDP fogadóportja.",
+          "user_index": "Nem egyezhet más Souliss kezelőfelület USER_INDEX értékével.",
+          "node_index": "Nem egyezhet más Souliss kezelőfelület NODE_INDEX értékével."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nem sikerült elérni a Souliss Gatewayt. Ellenőrizd az IP-címet, UDP-portot, tűzfalat és a Gateway beállítását.",
+      "invalid_host": "A megadott címet nem sikerült érvényes IPv4-címre feloldani."
+    },
+    "abort": {
+      "already_configured": "Ez a Souliss Gateway már be van állítva."
+    }
+  }
+}

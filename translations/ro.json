@@ -1,0 +1,25 @@
+{
+  "title": "Souliss",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Conectare la Souliss Gateway",
+        "description": "Introduceți parametrii Souliss Gateway. Perechea USER_INDEX / NODE_INDEX trebuie să fie unică față de SoulissApp, openHAB și orice altă interfață.",
+        "data": {
+          "host": "Adresa IP a Gateway-ului",
+          "gateway_port": "Port UDP Gateway",
+          "local_port": "Port UDP local Home Assistant",
+          "user_index": "USER_INDEX",
+          "node_index": "NODE_INDEX"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Souliss Gateway nu a putut fi contactat.",
+      "invalid_host": "Adresa introdusă nu poate fi rezolvată la un IPv4 valid."
+    },
+    "abort": {
+      "already_configured": "Acest Souliss Gateway este deja configurat."
+    }
+  }
+}

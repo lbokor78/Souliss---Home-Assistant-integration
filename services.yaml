@@ -1,0 +1,97 @@
+rediscover:
+  name: Rediscover network
+  description: Requests DB structure and Typical discovery again without restarting Home Assistant.
+  fields:
+    entry_id:
+      name: Config entry ID
+      description: Optional. Required only if more than one Souliss Gateway is configured.
+      example: "01M1ZK7NS3DGY10EE9NQ67MRTG"
+      selector:
+        text:
+
+timed:
+  name: Send T1n timed command
+  description: Sends Souliss T1n TIMED + cycles. Intended for T11/T12/T16/T19.
+  fields:
+    entry_id:
+      name: Config entry ID
+      selector:
+        text:
+    node:
+      name: Node
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 254
+          mode: box
+    slot:
+      name: Slot
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 254
+          mode: box
+    cycles:
+      name: Sleep cycles
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 15
+          mode: slider
+
+raw_force:
+  name: Advanced RAW FORCE
+  description: Advanced diagnostic command. Sends a FORCE command to a node/slot with optional extra payload bytes.
+  fields:
+    entry_id:
+      name: Config entry ID
+      selector:
+        text:
+    node:
+      name: Node
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 254
+          mode: box
+    slot:
+      name: Slot
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 254
+          mode: box
+    command:
+      name: Command byte
+      description: Decimal byte value, 0-255.
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 255
+          mode: box
+    data:
+      name: Extra bytes
+      description: Optional hexadecimal bytes, for example "FF 00 80".
+      selector:
+        text:
+
+raw_macaco:
+  name: Debug RAW MaCaco
+  description: Expert-only diagnostic service. Sends a complete MaCaco payload inside the configured Souliss VNet frame.
+  fields:
+    entry_id:
+      name: Config entry ID
+      selector:
+        text:
+    payload:
+      name: MaCaco payload
+      description: Hexadecimal bytes, for example "08 00 00 00 00".
+      required: true
+      selector:
+        text:
