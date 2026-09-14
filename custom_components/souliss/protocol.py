@@ -21,7 +21,6 @@ from .const import (
     FUNC_HEALTH_RESP,
     FUNC_PING_REQ,
     FUNC_PING_RESP,
-    FUNC_POLL_REQ,
     FUNC_POLL_RESP,
     FUNC_SUBSCRIBE_REQ,
     FUNC_SUBSCRIBE_RESP,
@@ -30,7 +29,6 @@ from .const import (
     HEALTH_INTERVAL,
     OFFLINE_TIMEOUT,
     PING_INTERVAL,
-    POLL_INTERVAL,
     REDISCOVERY_INTERVAL,
     SUBSCRIPTION_INTERVAL,
     T16,
@@ -281,8 +279,6 @@ class SoulissClient:
                 self.send_ping()
             if self.nodes and elapsed % SUBSCRIPTION_INTERVAL == 0:
                 self.send_subscription()
-            if self.nodes and elapsed % POLL_INTERVAL == 0:
-                self.send_poll()
             if self.nodes and elapsed % HEALTH_INTERVAL == 0:
                 self.send_health()
             if elapsed % REDISCOVERY_INTERVAL == 0:
@@ -391,11 +387,6 @@ class SoulissClient:
         if self.nodes:
             self._send_macaco(bytes([FUNC_SUBSCRIBE_REQ, 0, 0, 0, self.nodes & 0xFF]))
 
-    def send_poll(self) -> None:
-        """Request full node state; answered even when nothing has changed."""
-        if self.nodes:
-            self._send_macaco(bytes([FUNC_POLL_REQ, 0, 0, 0, self.nodes & 0xFF]))
-
     def send_health(self) -> None:
         if self.nodes:
             self._send_macaco(bytes([FUNC_HEALTH_REQ, 0, 0, 0, self.nodes & 0xFF]))
@@ -458,7 +449,6 @@ class SoulissClient:
         if func == FUNC_TYP_RESP:
             self._decode_typicals(macaco)
             self.send_subscription()
-            self.send_poll()
             self.send_health()
             return
 

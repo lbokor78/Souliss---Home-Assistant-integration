@@ -6,7 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3.3] - 2026-09-14
+
+### Fixed
+
+- **Removed the periodic state poll introduced in 0.1.0-alpha.3.2.** After updating to 0.1.0-alpha.3.2, a Souliss Gateway stopped responding, including to other Souliss user interfaces. The cause is not confirmed, but the poll (`0x27`) was the only new request sent to the Gateway. The integration now sends only the same requests as before 0.1.0-alpha.3.2.
+- Idle nodes still stay available: a non-zero node health response (`0x35`) keeps their entities available, without sending any additional request.
+
+> [!IMPORTANT]
+> If your Gateway stopped responding after installing 0.1.0-alpha.3.2, install this version, restart Home Assistant, and power-cycle the Gateway.
+
 ## [0.1.0-alpha.3.2] - 2026-09-14
+
+> [!WARNING]
+> Superseded by 0.1.0-alpha.3.3. The state poll added in this version may cause some Gateways to stop responding.
 
 ### Fixed
 
@@ -45,6 +58,7 @@ First version published in this repository.
 - Restored the stable primary entity unique IDs used by alpha.2. Alpha.3 had appended `_main` to them, which duplicated every existing entity.
 - On startup, obsolete registry entries created only by alpha.3 are removed: the duplicated `_main` entities and the default `_sleep_default` timed buttons.
 
-[Unreleased]: https://github.com/lbokor78/Souliss---Home-Assistant-integration/compare/v0.1.0-alpha.3.2...HEAD
+[Unreleased]: https://github.com/lbokor78/Souliss---Home-Assistant-integration/compare/v0.1.0-alpha.3.3...HEAD
+[0.1.0-alpha.3.3]: https://github.com/lbokor78/Souliss---Home-Assistant-integration/releases/tag/v0.1.0-alpha.3.3
 [0.1.0-alpha.3.2]: https://github.com/lbokor78/Souliss---Home-Assistant-integration/releases/tag/v0.1.0-alpha.3.2
 [0.1.0-alpha.3.1]: https://github.com/lbokor78/Souliss---Home-Assistant-integration/tree/0751538
