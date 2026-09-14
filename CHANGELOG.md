@@ -2,9 +2,11 @@
 
 All notable changes to this integration are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the `version` field in `custom_components/souliss/manifest.json`.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the `version` field in `custom_components/souliss/manifest.json`, and each version is published as a GitHub release tagged `v<version>`.
 
 ## [Unreleased]
+
+## [0.1.0-alpha.3.2] - 2026-09-14
 
 ### Fixed
 
@@ -15,6 +17,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 > [!NOTE]
 > Verified with an offline protocol simulation, not yet on physical hardware. If your log shows `Souliss Gateway returned unsupported function (0x83)` every minute, your Gateway firmware does not support polling. Please open an issue with your debug log and diagnostics.
+
+### Changed
+
+- `manifest.json` now includes `codeowners` and `issue_tracker`, as required by HACS, and `documentation` points to this repository.
+- The README describes installation and updates via HACS.
+
+### Removed
+
+- Compiled Python cache files (`__pycache__`) and macOS `.DS_Store` files are no longer part of the repository or the downloaded integration.
 
 ## [0.1.0-alpha.3.1] - 2026-09-11
 
@@ -34,5 +45,6 @@ First version published in this repository.
 - Restored the stable primary entity unique IDs used by alpha.2. Alpha.3 had appended `_main` to them, which duplicated every existing entity.
 - On startup, obsolete registry entries created only by alpha.3 are removed: the duplicated `_main` entities and the default `_sleep_default` timed buttons.
 
-[Unreleased]: https://github.com/lbokor78/Souliss---Home-Assistant-integration/commits/main
+[Unreleased]: https://github.com/lbokor78/Souliss---Home-Assistant-integration/compare/v0.1.0-alpha.3.2...HEAD
+[0.1.0-alpha.3.2]: https://github.com/lbokor78/Souliss---Home-Assistant-integration/releases/tag/v0.1.0-alpha.3.2
 [0.1.0-alpha.3.1]: https://github.com/lbokor78/Souliss---Home-Assistant-integration/tree/0751538

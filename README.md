@@ -185,6 +185,24 @@ The standard Souliss Gateway UDP port is:
 
 ## Installation
 
+### Installation via HACS (recommended)
+
+1. In Home Assistant, open **HACS**.
+
+2. Open the **⋮** menu → **Custom repositories**, and add:
+
+```text
+https://github.com/lbokor78/Souliss---Home-Assistant-integration
+```
+
+with the type **Integration**.
+
+3. Search for **Souliss** in HACS and select **Download**.
+
+4. Restart Home Assistant.
+
+5. Continue with step 4 of the manual installation below (**Add integration**).
+
 ### Manual installation
 
 1. Download or clone this repository.
@@ -505,6 +523,14 @@ This allows Souliss network events to be used directly in Home Assistant automat
 ---
 
 ## Updating
+
+For HACS installations:
+
+1. HACS checks this repository for new GitHub releases. When one is available, it appears under **Settings → Updates** and in HACS.
+2. Install the update.
+3. Restart Home Assistant.
+
+All changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 For manual installations:
 
