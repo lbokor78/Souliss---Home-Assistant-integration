@@ -21,6 +21,7 @@ from .const import (
     FUNC_HEALTH_RESP,
     FUNC_PING_REQ,
     FUNC_PING_RESP,
+    FUNC_POLL_REQ,
     FUNC_POLL_RESP,
     FUNC_SUBSCRIBE_REQ,
     FUNC_SUBSCRIBE_RESP,
@@ -29,6 +30,7 @@ from .const import (
     HEALTH_INTERVAL,
     OFFLINE_TIMEOUT,
     PING_INTERVAL,
+    POLL_INTERVAL,
     REDISCOVERY_INTERVAL,
     SUBSCRIPTION_INTERVAL,
     T16,
@@ -279,6 +281,8 @@ class SoulissClient:
                 self.send_ping()
             if self.nodes and elapsed % SUBSCRIPTION_INTERVAL == 0:
                 self.send_subscription()
+            if self.nodes and elapsed % POLL_INTERVAL == 0:
+                self.send_poll()
             if self.nodes and elapsed % HEALTH_INTERVAL == 0:
                 self.send_health()
             if elapsed % REDISCOVERY_INTERVAL == 0:
@@ -387,6 +391,11 @@ class SoulissClient:
         if self.nodes:
             self._send_macaco(bytes([FUNC_SUBSCRIBE_REQ, 0, 0, 0, self.nodes & 0xFF]))
 
+    def send_poll(self) -> None:
+        """Request full node state; answered even when nothing has changed."""
+        if self.nodes:
+            self._send_macaco(bytes([FUNC_POLL_REQ, 0, 0, 0, self.nodes & 0xFF]))
+
     def send_health(self) -> None:
         if self.nodes:
             self._send_macaco(bytes([FUNC_HEALTH_REQ, 0, 0, 0, self.nodes & 0xFF]))
@@ -449,6 +458,7 @@ class SoulissClient:
         if func == FUNC_TYP_RESP:
             self._decode_typicals(macaco)
             self.send_subscription()
+            self.send_poll()
             self.send_health()
             return
 
@@ -594,6 +604,7 @@ class SoulissClient:
         target_node = macaco[3]
         number_of = macaco[4]
         payload = macaco[5 : 5 + number_of]
+        now = utcnow()
         changed = False
         for offset, health in enumerate(payload):
             node = target_node + offset
@@ -601,12 +612,19 @@ class SoulissClient:
                 self.node_health[node] = health
                 changed = True
             for item in self.typicals.values():
-                if item.node == node and item.health != health:
+                if item.node != node:
+                    continue
+                if item.health != health:
                     item.health = health
                     changed = True
+                # A non-zero health means the gateway still reaches the node, so an
+                # idle node (no state changes, no subscription data) stays available.
+                if health > 0 and item.active:
+                    item.last_seen = now
         if changed:
             self._notify_structure()
-            self._notify_state()
+        # Availability depends on last_seen, so always refresh entity state.
+        self._notify_state()
 
     def _decode_action_message(self, macaco: bytes) -> None:
         # Current Souliss/openHAB format:
