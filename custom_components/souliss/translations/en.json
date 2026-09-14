@@ -1,0 +1,32 @@
+{
+  "title": "Souliss",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Souliss Gateway",
+        "description": "Enter the Souliss Gateway parameters. The USER_INDEX and NODE_INDEX pair must be unique among SoulissApp, openHAB and every other user interface.",
+        "data": {
+          "host": "Gateway IP address",
+          "gateway_port": "Gateway UDP port",
+          "local_port": "Home Assistant local UDP port",
+          "user_index": "USER_INDEX",
+          "node_index": "NODE_INDEX"
+        },
+        "data_description": {
+          "host": "LAN IPv4 address or hostname of the Souliss Gateway.",
+          "gateway_port": "Souliss normally uses UDP port 230.",
+          "local_port": "Dedicated UDP listening port used by this Home Assistant integration.",
+          "user_index": "Must not duplicate another Souliss user interface.",
+          "node_index": "Must not duplicate another Souliss user interface."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not contact the Souliss Gateway. Check IP, UDP port, firewall and Souliss Gateway configuration.",
+      "invalid_host": "The host could not be resolved to a valid IPv4 address."
+    },
+    "abort": {
+      "already_configured": "This Souliss Gateway is already configured."
+    }
+  }
+}

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- English translation (`translations/en.json`). Home Assistant loads translations for custom integrations only from the `translations` folder, so the setup dialog could show untranslated field names in English.
+
 ## [0.1.0-alpha.3.3] - 2026-09-14
 
 ### Fixed
