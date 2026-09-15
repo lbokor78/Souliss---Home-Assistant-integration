@@ -13,6 +13,7 @@ import struct
 from typing import Any
 
 from .const import (
+    DISCOVERY_SETTLE_DELAY,
     FUNC_ACTION_MESSAGE,
     FUNC_DBSTRUCT_REQ,
     FUNC_DBSTRUCT_RESP,
@@ -30,6 +31,7 @@ from .const import (
     OFFLINE_TIMEOUT,
     PING_INTERVAL,
     REDISCOVERY_INTERVAL,
+    SEND_SPACING,
     SUBSCRIPTION_INTERVAL,
     T16,
     T19,
@@ -55,6 +57,11 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# Read-only requests: a duplicate still waiting in the send queue adds nothing.
+_DEDUPLICATED_FUNCTIONS = frozenset(
+    {FUNC_PING_REQ, FUNC_SUBSCRIBE_REQ, FUNC_HEALTH_REQ, FUNC_DBSTRUCT_REQ, FUNC_TYP_REQ}
+)
 
 
 def utcnow() -> datetime:
@@ -179,6 +186,10 @@ class SoulissClient:
         self.gateway_ip = socket.gethostbyname(host)
         self._transport: asyncio.DatagramTransport | None = None
         self._periodic_task: asyncio.Task[None] | None = None
+        self._tx_task: asyncio.Task[None] | None = None
+        self._tx_queue: deque[bytes] = deque()
+        self._tx_wakeup = asyncio.Event()
+        self._after_discovery_handle: asyncio.TimerHandle | None = None
         self._online_event = asyncio.Event()
         self._closed = False
 
@@ -236,6 +247,7 @@ class SoulissClient:
             _LOGGER.exception("Unable to bind Souliss UDP local port %s", self.local_port)
             raise
 
+        self._tx_task = asyncio.create_task(self._tx_loop())
         self.send_ping()
         self.send_dbstruct()
 
@@ -251,13 +263,19 @@ class SoulissClient:
 
     async def async_close(self) -> None:
         self._closed = True
-        if self._periodic_task:
-            self._periodic_task.cancel()
-            try:
-                await self._periodic_task
-            except asyncio.CancelledError:
-                pass
-            self._periodic_task = None
+        if self._after_discovery_handle:
+            self._after_discovery_handle.cancel()
+            self._after_discovery_handle = None
+        for task in (self._periodic_task, self._tx_task):
+            if task:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+        self._periodic_task = None
+        self._tx_task = None
+        self._tx_queue.clear()
         if self._transport:
             self._transport.close()
             self._transport = None
@@ -353,14 +371,30 @@ class SoulissClient:
         if not self._transport:
             return
         frame = self._build_vnet_frame(macaco)
-        self._record_packet("tx", frame)
-        _LOGGER.debug(
-            "Souliss TX %s:%s %s",
-            self.gateway_ip,
-            self.gateway_port,
-            frame.hex(" ").upper(),
-        )
-        self._transport.sendto(frame, (self.gateway_ip, self.gateway_port))
+        if macaco[0] in _DEDUPLICATED_FUNCTIONS and frame in self._tx_queue:
+            return
+        self._tx_queue.append(frame)
+        self._tx_wakeup.set()
+
+    async def _tx_loop(self) -> None:
+        # The Gateway silently drops a request that arrives right after another
+        # one, so frames are sent one at a time, SEND_SPACING seconds apart.
+        while not self._closed:
+            if not self._tx_queue:
+                self._tx_wakeup.clear()
+                await self._tx_wakeup.wait()
+                continue
+            frame = self._tx_queue.popleft()
+            if self._transport:
+                self._record_packet("tx", frame)
+                _LOGGER.debug(
+                    "Souliss TX %s:%s %s",
+                    self.gateway_ip,
+                    self.gateway_port,
+                    frame.hex(" ").upper(),
+                )
+                self._transport.sendto(frame, (self.gateway_ip, self.gateway_port))
+            await asyncio.sleep(SEND_SPACING)
 
     def send_raw_macaco(self, payload: bytes) -> None:
         """Advanced/debug: send a complete MaCaco payload inside our VNet frame."""
@@ -377,6 +411,20 @@ class SoulissClient:
         self.send_dbstruct()
         if self.nodes:
             self.send_typical_request()
+
+    def _schedule_after_discovery(self) -> None:
+        # The Gateway sends the Typical map in one frame per node. Request state
+        # and health once after the last frame instead of after every frame.
+        if self._after_discovery_handle:
+            self._after_discovery_handle.cancel()
+        self._after_discovery_handle = asyncio.get_running_loop().call_later(
+            DISCOVERY_SETTLE_DELAY, self._after_discovery
+        )
+
+    def _after_discovery(self) -> None:
+        self._after_discovery_handle = None
+        self.send_subscription()
+        self.send_health()
 
     def send_typical_request(self, start_node: int = 0, nodes: int | None = None) -> None:
         count = self.nodes if nodes is None else nodes
@@ -448,8 +496,7 @@ class SoulissClient:
 
         if func == FUNC_TYP_RESP:
             self._decode_typicals(macaco)
-            self.send_subscription()
-            self.send_health()
+            self._schedule_after_discovery()
             return
 
         if func in (FUNC_SUBSCRIBE_RESP, FUNC_POLL_RESP):

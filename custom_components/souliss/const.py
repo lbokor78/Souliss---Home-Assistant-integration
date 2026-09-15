@@ -17,6 +17,10 @@ SUBSCRIPTION_INTERVAL = 30
 HEALTH_INTERVAL = 60
 REDISCOVERY_INTERVAL = 300
 OFFLINE_TIMEOUT = 95
+# Minimum gap between two frames sent to the Gateway (seconds).
+SEND_SPACING = 0.5
+# Wait after the last Typical map frame before requesting state and health (seconds).
+DISCOVERY_SETTLE_DELAY = 2.0
 DEFAULT_SLEEP_CYCLES = 5
 
 PLATFORMS = [

@@ -10,6 +10,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - English translation (`translations/en.json`). Home Assistant loads translations for custom integrations only from the `translations` folder, so the setup dialog could show untranslated field names in English.
 
+### Fixed
+
+- **Entities of idle nodes became unavailable after a few minutes on some Gateways.** Diagnostics showed that the Gateway silently ignores a request that arrives right after another one. The periodic ping, state subscription (`0x21`) and health request (`0x25`) were sent at the same moment, so the subscription and health requests were mostly lost. Without state or health answers, entities of idle nodes expired after about three minutes, until the next network rediscovery.
+  - Requests are now queued and sent at least 0.5 seconds apart. No new request types are sent.
+  - After Typical discovery, state and health are requested once, after the last Typical frame, instead of after every frame.
+  - An identical read request that is still waiting in the queue is not sent twice.
+
 ## [0.1.0-alpha.3.3] - 2026-09-14
 
 ### Fixed
