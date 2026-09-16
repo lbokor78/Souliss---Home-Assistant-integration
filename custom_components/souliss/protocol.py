@@ -31,6 +31,7 @@ from .const import (
     PING_INTERVAL,
     REDISCOVERY_INTERVAL,
     SUBSCRIPTION_INTERVAL,
+    TX_INTERVAL,
     T16,
     T19,
     T31,
@@ -179,6 +180,8 @@ class SoulissClient:
         self.gateway_ip = socket.gethostbyname(host)
         self._transport: asyncio.DatagramTransport | None = None
         self._periodic_task: asyncio.Task[None] | None = None
+        self._tx_queue: asyncio.Queue[bytes] = asyncio.Queue()
+        self._tx_task: asyncio.Task[None] | None = None
         self._online_event = asyncio.Event()
         self._closed = False
 
@@ -236,6 +239,7 @@ class SoulissClient:
             _LOGGER.exception("Unable to bind Souliss UDP local port %s", self.local_port)
             raise
 
+        self._tx_task = asyncio.create_task(self._tx_loop())
         self.send_ping()
         self.send_dbstruct()
 
@@ -251,6 +255,13 @@ class SoulissClient:
 
     async def async_close(self) -> None:
         self._closed = True
+        if self._tx_task:
+            self._tx_task.cancel()
+            try:
+                await self._tx_task
+            except asyncio.CancelledError:
+                pass
+            self._tx_task = None
         if self._periodic_task:
             self._periodic_task.cancel()
             try:
@@ -350,17 +361,34 @@ class SoulissClient:
         return bytes(header) + macaco
 
     def _send_macaco(self, macaco: bytes) -> None:
+        """Queue a MaCaco frame; _tx_loop paces the actual UDP sends.
+
+        The gateway holds one frame at a time, so requests fired in the same
+        event-loop tick (ping + dbstruct, subscription + health, ...) used to be
+        silently dropped except for the first one. Identical requests that are
+        still waiting in the queue are merged; FORCE commands are never merged.
+        """
         if not self._transport:
             return
-        frame = self._build_vnet_frame(macaco)
-        self._record_packet("tx", frame)
-        _LOGGER.debug(
-            "Souliss TX %s:%s %s",
-            self.gateway_ip,
-            self.gateway_port,
-            frame.hex(" ").upper(),
-        )
-        self._transport.sendto(frame, (self.gateway_ip, self.gateway_port))
+        if macaco[0] != FUNC_FORCE and macaco in self._tx_queue._queue:  # noqa: SLF001
+            return
+        self._tx_queue.put_nowait(macaco)
+
+    async def _tx_loop(self) -> None:
+        while not self._closed:
+            macaco = await self._tx_queue.get()
+            if not self._transport:
+                continue
+            frame = self._build_vnet_frame(macaco)
+            self._record_packet("tx", frame)
+            _LOGGER.debug(
+                "Souliss TX %s:%s %s",
+                self.gateway_ip,
+                self.gateway_port,
+                frame.hex(" ").upper(),
+            )
+            self._transport.sendto(frame, (self.gateway_ip, self.gateway_port))
+            await asyncio.sleep(TX_INTERVAL)
 
     def send_raw_macaco(self, payload: bytes) -> None:
         """Advanced/debug: send a complete MaCaco payload inside our VNet frame."""
