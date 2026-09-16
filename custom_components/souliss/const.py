@@ -17,6 +17,9 @@ SUBSCRIPTION_INTERVAL = 30
 HEALTH_INTERVAL = 60
 REDISCOVERY_INTERVAL = 300
 OFFLINE_TIMEOUT = 95
+# Souliss gateways buffer a single UDP frame: back-to-back datagrams are dropped.
+# Every outgoing MaCaco frame is queued and spaced by this many seconds.
+TX_INTERVAL = 0.25
 DEFAULT_SLEEP_CYCLES = 5
 
 PLATFORMS = [
