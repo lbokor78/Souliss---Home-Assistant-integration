@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3.4] - 2026-09-16
+
 ### Fixed
 
 - **Outgoing MaCaco frames are now paced through a send queue** (`TX_INTERVAL`, 0.25 s). The Souliss Gateway buffers a single UDP frame, so requests sent back-to-back in the same event-loop tick (ping + DB structure at startup, subscription + health after each Typicals answer, ping + rediscovery on the 300 s tick) were silently dropped except for the first one. Symptoms: a Gateway whose startup DB-structure request was lost stayed at 0 nodes with every entity unavailable, health requests (`0x25`) never got an answer, and periodic rediscovery never reached the Gateway. Identical pending requests are merged; FORCE commands are never merged.
