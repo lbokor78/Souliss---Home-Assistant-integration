@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3.5] - 2026-10-24
+
+### Changed
+
+- **States are written only on a real change.** The client notifies every listener on every packet (~14 s); each entity now compares availability, state and attributes with what it wrote last and skips the write when nothing changed. On one installation this cut Souliss recorder rows from ~1 650 to ~30 per 10 minutes. If building the comparison fails, the entity writes as before.
+- **Removed per-packet timestamp attributes**: `last_seen` and `health_raw` (all entities), `last_packet` (Gateway sensor), `last_state_packet` (node Health sensor), `last_seen` (topic sensors). They changed on every packet and produced a recorder row each time. The values are still in the diagnostics download, and availability still uses the last-seen time.
+
+> [!NOTE]
+> If a template or automation reads one of these attributes, it has to be updated.
+
+### Fixed
+
+- **An unwired analog sensor reporting NaN or infinity** is now `unknown` instead of raising `ValueError`.
+- **One failing state listener no longer blocks the others**: an exception is logged and the remaining entities still update (a NaN sensor delayed every switch update by ~30 s).
+- **Device parent link uses `via_device_id`** instead of the deprecated `via_device` identifier pair; re-adding an entity after editing it in the registry no longer fails.
+
 ## [0.1.0-alpha.3.4] - 2026-09-16
 
 ### Fixed

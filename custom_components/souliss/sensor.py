@@ -19,6 +19,7 @@ from .const import (
 )
 from .entity import SoulissEntity
 from .platform_helpers import setup_dynamic_typicals
+from .entity import gateway_via, write_if_changed
 from .protocol import SoulissClient, SoulissTopic, half_to_float
 
 SENSOR_META = {
@@ -67,7 +68,7 @@ class SoulissGatewaySensor(SensorEntity):
             "slots_per_node": self.client.max_typicals_per_node,
             "active_typicals": sum(1 for i in self.client.typicals.values() if i.active),
             "topics": len(self.client.topics),
-            "last_packet": self.client.last_packet.isoformat() if self.client.last_packet else None,
+            # No last_packet: it changed on every packet and wrote a recorder row each time.
             "protocol_errors": dict(self.client.protocol_errors),
         }
 
@@ -77,7 +78,7 @@ class SoulissGatewaySensor(SensorEntity):
         self.async_on_remove(self.client.add_structure_listener(self._handle))
 
     def _handle(self) -> None:
-        self.async_write_ha_state()
+        write_if_changed(self)
 
 
 class SoulissNodeHealthSensor(SensorEntity):
@@ -106,7 +107,7 @@ class SoulissNodeHealthSensor(SensorEntity):
             manufacturer="Souliss",
             model="Souliss Node",
             name=f"Souliss Node {self.node}",
-            via_device=(DOMAIN, f"{self.client.gateway_ip}-gateway"),
+            **gateway_via(self.hass, self.client.gateway_ip),
         )
 
     @property
@@ -115,10 +116,7 @@ class SoulissNodeHealthSensor(SensorEntity):
         return {
             "node": self.node,
             "active_typicals": len(active),
-            "last_state_packet": (
-                self.client.node_last_seen[self.node].isoformat()
-                if self.node in self.client.node_last_seen else None
-            ),
+            # No last_state_packet: it changed on every packet and wrote a recorder row each time.
             "typical_map": " ".join(
                 f"{v:02X}" for v in self.client.node_typical_maps.get(self.node, [])
             ),
@@ -130,7 +128,7 @@ class SoulissNodeHealthSensor(SensorEntity):
         self.async_on_remove(self.client.add_gateway_listener(self._handle))
 
     def _handle(self) -> None:
-        self.async_write_ha_state()
+        write_if_changed(self)
 
 
 class SoulissAnalogSensor(SoulissEntity, SensorEntity):
@@ -145,7 +143,8 @@ class SoulissAnalogSensor(SoulissEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         value = half_to_float(self.typical.payload)
-        if value is None:
+        # An unwired sensor reports NaN / infinity → unknown (otherwise Home Assistant raises ValueError).
+        if value is None or value != value or value in (float("inf"), float("-inf")):
             return None
         _device_class, _unit, scale = SENSOR_META[self.typical.typical]
         return round(value * scale, 4)
@@ -186,7 +185,7 @@ class SoulissTopicSensor(SensorEntity):
             manufacturer="Souliss",
             model="Action Messages",
             name="Souliss Topics",
-            via_device=(DOMAIN, f"{self.client.gateway_ip}-gateway"),
+            **gateway_via(self.hass, self.client.gateway_ip),
         )
 
     @property
@@ -197,7 +196,7 @@ class SoulissTopicSensor(SensorEntity):
             "variant": self.topic.variant,
             "variant_hex": f"0x{self.topic.variant_hex}",
             "raw": self.topic.payload.hex(" ").upper(),
-            "last_seen": self.topic.last_seen.isoformat() if self.topic.last_seen else None,
+            # No last_seen: it changed on every packet and wrote a recorder row each time.
         }
 
     async def async_added_to_hass(self) -> None:
@@ -205,7 +204,7 @@ class SoulissTopicSensor(SensorEntity):
 
     def _handle_topic(self, topic: SoulissTopic) -> None:
         if topic.key == self.topic.key:
-            self.async_write_ha_state()
+            write_if_changed(self)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
