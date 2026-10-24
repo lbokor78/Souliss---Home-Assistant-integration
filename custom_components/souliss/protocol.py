@@ -321,8 +321,13 @@ class SoulissClient:
             items.remove(callback)
 
     def _notify_state(self) -> None:
+        # One failing entity must not stop the others from updating (an unwired temperature sensor
+        # reporting NaN delayed every switch state update by ~30 s).
         for callback in list(self._state_listeners):
-            callback()
+            try:
+                callback()
+            except Exception:  # noqa: BLE001
+                _LOGGER.exception("Souliss state listener failed")
 
     def _notify_gateway(self) -> None:
         for callback in list(self._gateway_listeners):
